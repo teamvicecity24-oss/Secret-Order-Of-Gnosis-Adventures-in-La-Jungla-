@@ -15,6 +15,7 @@ from src.ui.menu import (
     MainMenu, CharacterSelectMenu, PauseMenu, 
     GameOverMenu, HUD, HighScoreMenu
 )
+from src.story import StoryManager, PEELCompanion, Keeper, LoreScreen
 
 
 class Game:
@@ -39,6 +40,12 @@ class Game:
         self.level = None
         self.score_manager = ScoreManager()
         
+        # Story system - Secret Order of Gnosis
+        self.story_manager = StoryManager()
+        self.peel = PEELCompanion(self.story_manager)
+        self.lore_screen = LoreScreen(self.story_manager)
+        self.current_keeper = None
+        
         # Menus
         self.main_menu = MainMenu()
         self.character_select = CharacterSelectMenu()
@@ -49,6 +56,9 @@ class Game:
         
         # Input
         self.keys = None
+        
+        # Show intro after short delay
+        self.game_start_timer = 0
         
     def run(self):
         """Main game loop"""
@@ -182,6 +192,29 @@ class Game:
         # Update score manager
         self.score_manager.update(dt)
         
+        # Update PEEL companion
+        self.peel.update()
+        
+        # Show intro hints
+        if self.game_start_timer > 0:
+            self.game_start_timer -= 1
+            if self.game_start_timer == 100:
+                self.peel.show_hint('movement')
+            elif self.game_start_timer == 60:
+                self.peel.show_hint('combat')
+        
+        # Update keeper
+        if self.current_keeper:
+            self.current_keeper.update()
+            # Check for rescue
+            if self.current_keeper.can_interact(self.player):
+                # Auto-rescue when near
+                result = self.current_keeper.rescue()
+                if result:
+                    self.peel.show_hint('secrets')  # Celebrate!
+                    # Grant keeper power to player
+                    self._grant_keeper_power(result['power'])
+        
         # Check player death
         if not self.player.is_alive():
             self.game_over(won=False)
@@ -192,8 +225,15 @@ class Game:
         # Draw level
         self.level.draw(self.screen)
         
+        # Draw keeper if present
+        if self.current_keeper:
+            self.current_keeper.draw(self.screen, self.level.camera_x)
+        
         # Draw player
         self.player.draw(self.screen, self.level.camera_x)
+        
+        # Draw PEEL companion
+        self.peel.draw(self.screen, self.player.rect.x, self.player.rect.y, self.level.camera_x)
         
         # Draw HUD
         self.hud.draw(self.screen, self.player, self.score_manager, self.current_level)
@@ -253,7 +293,10 @@ class Game:
     def start_game(self):
         """Start a new game - begins at Level 0 (Tutorial)"""
         self.score_manager.reset()
+        self.story_manager = StoryManager()  # Reset story
+        self.peel = PEELCompanion(self.story_manager)
         self.current_level = 0
+        self.game_start_timer = 120  # Show intro after 2 seconds
         self.start_level()
         
     def start_level(self):
@@ -267,8 +310,27 @@ class Game:
         start_x, start_y = self.level.player_start
         self.player = create_player(self.selected_character, start_x, start_y)
         
+        # Spawn Keeper for this level (if not tutorial)
+        self.current_keeper = None
+        if self.current_level > 0:
+            keeper_id, keeper_data = self.story_manager.get_keeper_for_level(self.current_level)
+            if keeper_id and not keeper_data['rescued']:
+                # Place keeper near the end of the level
+                self.current_keeper = Keeper(
+                    self.level.exit_rect.x - 150 if self.level.exit_rect else 800,
+                    300,
+                    keeper_id,
+                    self.story_manager
+                )
+        
         # Start level timing
         self.score_manager.start_level()
+        
+        # PEEL shows hint for this level
+        if self.current_level == 0:
+            self.peel.show_hint('intro')
+        elif self.current_keeper:
+            self.peel.show_hint(f'keeper_{self.current_keeper.keeper_id}')
         
         self.state = STATE_PLAYING
         
@@ -287,6 +349,18 @@ class Game:
             self.start_level()
         else:
             self.game_over(won=True)
+            
+    def _grant_keeper_power(self, power_name):
+        """Grant a keeper power to the player"""
+        if power_name == "Fire Rounds":
+            # Increase bullet damage
+            self.player.damage_multiplier = 1.5
+        elif power_name == "Double Jump":
+            # Enable double jump
+            self.player.can_double_jump = True
+        elif power_name == "Shard Magnet":
+            # Enable coin magnet (implemented in level update)
+            self.player.has_magnet = True
             
     def game_over(self, won=False):
         """Handle game over"""
