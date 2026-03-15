@@ -20,6 +20,12 @@ class Player(Sprite):
         self.rect.x = x
         self.rect.y = y
         
+        # Initialize Sprite physics attributes
+        self.vel_x = 0
+        self.vel_y = 0
+        self.facing_right = True
+        self.on_ground = False
+        
         # Character attributes (override in subclasses)
         self.max_health = PLAYER_MAX_HEALTH
         self.health = self.max_health
@@ -43,6 +49,11 @@ class Player(Sprite):
         # Animation
         self.anim_frame = 0
         self.anim_timer = 0
+        
+        # Keeper powers
+        self.damage_multiplier = 1.0
+        self.can_double_jump = False
+        self.has_magnet = False
         
     def update(self, platforms, enemies, all_sprites, current_time):
         """Update player state"""
