@@ -9,7 +9,7 @@ import sys
 
 from src.constants import *
 from src.characters.player import create_player
-from src.levels.level import Level, LEVEL_1_DATA, LEVEL_2_DATA, LEVEL_3_DATA
+from src.levels.level import Level, LEVEL_0_DATA, LEVEL_1_DATA, LEVEL_2_DATA, LEVEL_3_DATA
 from src.scoring import ScoreManager
 from src.ui.menu import (
     MainMenu, CharacterSelectMenu, PauseMenu, 
@@ -30,8 +30,8 @@ class Game:
         
         # Game state
         self.state = STATE_MENU
-        self.current_level = 1
-        self.max_levels = 3
+        self.current_level = 0
+        self.max_levels = 4
         self.selected_character = CHARACTER_RECON
         
         # Game objects
@@ -251,15 +251,16 @@ class Game:
             self.game_over(won=True)
             
     def start_game(self):
-        """Start a new game"""
+        """Start a new game - begins at Level 0 (Tutorial)"""
         self.score_manager.reset()
-        self.current_level = 1
+        self.current_level = 0
         self.start_level()
         
     def start_level(self):
         """Start current level"""
-        # Load level data
-        level_data = [LEVEL_1_DATA, LEVEL_2_DATA, LEVEL_3_DATA][self.current_level - 1]
+        # Load level data (0 = Tutorial, 1-3 = Main levels)
+        levels = [LEVEL_0_DATA, LEVEL_1_DATA, LEVEL_2_DATA, LEVEL_3_DATA]
+        level_data = levels[self.current_level]
         self.level = Level(level_data, self.current_level)
         
         # Create player

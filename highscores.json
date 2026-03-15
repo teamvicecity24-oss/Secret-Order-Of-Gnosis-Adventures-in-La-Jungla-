@@ -1,0 +1,50 @@
+[
+  {
+    "name": "Commander",
+    "score": 50000,
+    "enemies": 100,
+    "coins": 50,
+    "time": 600,
+    "date": "2024-01-01"
+  },
+  {
+    "name": "Lieutenant",
+    "score": 30000,
+    "enemies": 75,
+    "coins": 30,
+    "time": 900,
+    "date": "2024-01-01"
+  },
+  {
+    "name": "Sergeant",
+    "score": 15000,
+    "enemies": 50,
+    "coins": 20,
+    "time": 1200,
+    "date": "2024-01-01"
+  },
+  {
+    "name": "Player",
+    "score": 600,
+    "enemies": 0,
+    "coins": 6,
+    "time": 15.767999999999912,
+    "date": "2026-03-15"
+  },
+  {
+    "name": "Player",
+    "score": 1100,
+    "enemies": 0,
+    "coins": 11,
+    "time": 37.11899999999912,
+    "date": "2026-03-15"
+  },
+  {
+    "name": "Player",
+    "score": 600,
+    "enemies": 0,
+    "coins": 6,
+    "time": 23.896999999999384,
+    "date": "2026-03-15"
+  }
+]

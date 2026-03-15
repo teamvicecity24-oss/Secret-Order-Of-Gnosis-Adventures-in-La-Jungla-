@@ -5,14 +5,20 @@ import pygame
 from src.constants import *
 from src.sprite import Sprite
 from src.weapons.bullet import Bullet
+from src.image_loader import load_character_sprite
 
 
 class Player(Sprite):
     """Base player class with common functionality"""
     
     def __init__(self, x, y, character_type):
-        super().__init__(x, y, 32, 48, WHITE)
         self.character_type = character_type
+        
+        # Load character image
+        self.image = load_character_sprite(character_type, 'idle')
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
         
         # Character attributes (override in subclasses)
         self.max_health = PLAYER_MAX_HEALTH
@@ -156,7 +162,7 @@ class Recon(Player):
     
     def __init__(self, x, y):
         super().__init__(x, y, CHARACTER_RECON)
-        self.image.fill(CYAN)
+        # Image loaded from assets/images/characters/recon_idle.png
         self.speed = PLAYER_SPEED + 3
         self.max_health = PLAYER_MAX_HEALTH - 20
         self.health = self.max_health
@@ -190,10 +196,10 @@ class Heavy(Player):
     
     def __init__(self, x, y):
         super().__init__(x, y, CHARACTER_HEAVY)
-        self.image.fill(RED)
+        # Image loaded from assets/images/characters/heavy_idle.png
         self.rect.height = 56
-        self.image = pygame.Surface([32, 56])
-        self.image.fill(RED)
+        self.image = load_character_sprite(CHARACTER_HEAVY, 'idle')
+        self.image = pygame.transform.scale(self.image, (32, 56))
         self.speed = PLAYER_SPEED - 2
         self.max_health = PLAYER_MAX_HEALTH + 50
         self.health = self.max_health
@@ -224,7 +230,7 @@ class Tech(Player):
     
     def __init__(self, x, y):
         super().__init__(x, y, CHARACTER_TECH)
-        self.image.fill(BLUE)
+        # Image loaded from assets/images/characters/tech_idle.png
         self.speed = PLAYER_SPEED - 1
         self.shoot_cooldown = BULLET_COOLDOWN + 100
         self.special_name = "Hack/Shield"
@@ -266,7 +272,7 @@ class Medic(Player):
     
     def __init__(self, x, y):
         super().__init__(x, y, CHARACTER_MEDIC)
-        self.image.fill(GREEN)
+        # Image loaded from assets/images/characters/medic_idle.png
         self.speed = PLAYER_SPEED
         self.shoot_cooldown = BULLET_COOLDOWN + 50
         self.special_name = "Heal Pulse"
@@ -290,7 +296,7 @@ class Stealth(Player):
     
     def __init__(self, x, y):
         super().__init__(x, y, CHARACTER_STEALTH)
-        self.image.fill(PURPLE)
+        # Image loaded from assets/images/characters/stealth_idle.png
         self.speed = PLAYER_SPEED + 2
         self.max_health = PLAYER_MAX_HEALTH - 10
         self.health = self.max_health

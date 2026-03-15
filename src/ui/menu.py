@@ -113,17 +113,24 @@ class MainMenu(Menu):
 
 
 class CharacterSelectMenu(Menu):
-    """Character selection screen"""
+    """Character selection screen - Jungle/Adventure Theme"""
     
     def __init__(self):
-        super().__init__("Select Your Character")
+        super().__init__("Choose Your Operative")
+        
+        # Jungle/Adventure color scheme
+        self.bg_color = (20, 40, 20)  # Dark jungle green
+        self.title_color = (255, 215, 100)  # Golden yellow
+        self.text_color = (220, 220, 200)  # Light cream
+        self.highlight_color = (255, 180, 60)  # Orange-gold
+        self.box_border = (100, 80, 50)  # Brown
         
         self.characters = [
-            ("Recon", CYAN, "Speedster with rapid fire", "Speed Boost"),
-            ("Heavy", RED, "Tank with explosive rounds", "Explosive Round"),
-            ("Tech", BLUE, "Engineer with energy shield", "Shield"),
-            ("Medic", GREEN, "Support with healing pulse", "Heal Pulse"),
-            ("Stealth", PURPLE, "Invisible assassin", "Cloak"),
+            ("Recon", (0, 200, 255), "Speedster with rapid fire", "Speed Boost"),
+            ("Heavy", (200, 50, 50), "Tank with explosive rounds", "Explosive Round"),
+            ("Tech", (100, 150, 255), "Engineer with energy shield", "Shield"),
+            ("Medic", (50, 200, 100), "Support with healing pulse", "Heal Pulse"),
+            ("Stealth", (150, 50, 200), "Invisible assassin", "Cloak"),
         ]
         
         self.selected = 0
@@ -147,13 +154,25 @@ class CharacterSelectMenu(Menu):
         return super().update(mouse_pos, events)
         
     def draw(self, surface):
-        """Draw character selection"""
-        surface.fill(BLACK)
+        """Draw character selection with jungle theme"""
+        surface.fill(self.bg_color)
         
-        # Title
-        title_surf = self.font_title.render(self.title, True, WHITE)
-        title_rect = title_surf.get_rect(center=(SCREEN_WIDTH // 2, 50))
+        # Draw decorative border
+        pygame.draw.rect(surface, self.box_border, (10, 10, SCREEN_WIDTH - 20, SCREEN_HEIGHT - 20), 3)
+        
+        # Title with shadow effect
+        title_surf = self.font_title.render(self.title, True, self.title_color)
+        title_rect = title_surf.get_rect(center=(SCREEN_WIDTH // 2, 60))
+        # Shadow
+        shadow_surf = self.font_title.render(self.title, True, (50, 40, 20))
+        surface.blit(shadow_surf, (title_rect.x + 3, title_rect.y + 3))
         surface.blit(title_surf, title_rect)
+        
+        # Subtitle
+        subtitle = "Secret Order of Gnosis"
+        sub_surf = self.font_text.render(subtitle, True, (180, 160, 100))
+        sub_rect = sub_surf.get_rect(center=(SCREEN_WIDTH // 2, 110))
+        surface.blit(sub_surf, sub_rect)
         
         # Draw characters
         box_width = 180
@@ -163,17 +182,25 @@ class CharacterSelectMenu(Menu):
         
         for i, (name, color, desc, special) in enumerate(self.characters):
             x = start_x + i * (box_width + spacing)
-            y = 120
+            y = 160
             
-            # Selection box
+            # Selection box with border
             box_rect = pygame.Rect(x, y, box_width, box_height)
             if i == self.selected:
-                pygame.draw.rect(surface, YELLOW, box_rect.inflate(10, 10))
+                # Glow effect for selected
+                pygame.draw.rect(surface, self.highlight_color, box_rect.inflate(12, 12))
+                pygame.draw.rect(surface, (255, 255, 255), box_rect.inflate(8, 8), 2)
+            pygame.draw.rect(surface, self.box_border, box_rect.inflate(4, 4))
             pygame.draw.rect(surface, color, box_rect)
+            
+            # Character icon placeholder (could load actual images here)
+            icon_rect = pygame.Rect(x + 70, y + 15, 40, 40)
+            pygame.draw.rect(surface, (0, 0, 0, 100), icon_rect)
+            pygame.draw.rect(surface, WHITE, icon_rect, 2)
             
             # Character name
             name_surf = self.font_text.render(name, True, WHITE)
-            name_rect = name_surf.get_rect(center=(x + box_width // 2, y + 30))
+            name_rect = name_surf.get_rect(center=(x + box_width // 2, y + 70))
             surface.blit(name_surf, name_rect)
             
             # Description
@@ -189,13 +216,16 @@ class CharacterSelectMenu(Menu):
                 lines.append(' '.join(line))
                 
             for j, line in enumerate(lines):
-                desc_surf = self.font_small.render(line, True, WHITE)
-                desc_rect = desc_surf.get_rect(center=(x + box_width // 2, y + 80 + j * 25))
+                desc_surf = self.font_small.render(line, True, self.text_color)
+                desc_rect = desc_surf.get_rect(center=(x + box_width // 2, y + 115 + j * 22))
                 surface.blit(desc_surf, desc_rect)
             
-            # Special ability
-            special_surf = self.font_small.render(f"Special: {special}", True, YELLOW)
-            special_rect = special_surf.get_rect(center=(x + box_width // 2, y + 160))
+            # Special ability label
+            special_label = self.font_small.render("Special Ability:", True, (180, 160, 100))
+            surface.blit(special_label, (x + box_width // 2 - 50, y + 155))
+            
+            special_surf = self.font_small.render(special, True, self.highlight_color)
+            special_rect = special_surf.get_rect(center=(x + box_width // 2, y + 180))
             surface.blit(special_surf, special_rect)
         
         # Buttons
