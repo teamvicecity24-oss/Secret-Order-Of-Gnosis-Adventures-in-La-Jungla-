@@ -1,0 +1,231 @@
+"""
+Platform and level tile classes
+"""
+import pygame
+from src.constants import *
+
+
+class Platform(pygame.sprite.Sprite):
+    """Static platform tile"""
+    
+    def __init__(self, x, y, tile_type='normal'):
+        super().__init__()
+        self.tile_type = tile_type
+        self.image = pygame.Surface([TILE_SIZE, TILE_SIZE])
+        
+        # Color based on tile type
+        colors = {
+            'normal': BROWN,
+            'grass': GREEN,
+            'stone': GRAY,
+            'danger': RED,
+            'ice': CYAN,
+            'moving': YELLOW,
+            'breakable': ORANGE,
+            'finish': MAGENTA
+        }
+        self.image.fill(colors.get(tile_type, BROWN))
+        
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        
+        # Moving platform properties
+        self.start_x = x
+        self.start_y = y
+        self.move_range = 100
+        self.move_speed = 2
+        self.move_direction = 1
+        self.vertical_move = tile_type == 'moving'
+
+
+class Level:
+    """Level container with tiles, enemies, and objectives"""
+    
+    def __init__(self, level_data, level_number):
+        self.level_number = level_number
+        self.width = 0
+        self.height = 0
+        
+        # Sprite groups
+        self.platforms = pygame.sprite.Group()
+        self.enemies = pygame.sprite.Group()
+        self.collectibles = pygame.sprite.Group()
+        self.puzzles = pygame.sprite.Group()
+        
+        # Player start position
+        self.player_start = (100, 500)
+        
+        # Level exit
+        self.exit_rect = None
+        
+        # Camera
+        self.camera_x = 0
+        
+        # Parse level data
+        self.parse_level_data(level_data)
+        
+    def parse_level_data(self, level_data):
+        """Parse ASCII level data into game objects"""
+        lines = level_data.strip().split('\n')
+        self.height = len(lines) * TILE_SIZE
+        self.width = max(len(line) for line in lines) * TILE_SIZE
+        
+        for row, line in enumerate(lines):
+            for col, char in enumerate(line):
+                x = col * TILE_SIZE
+                y = row * TILE_SIZE
+                
+                if char == '#':  # Normal platform
+                    self.platforms.add(Platform(x, y, 'normal'))
+                elif char == 'G':  # Grass
+                    self.platforms.add(Platform(x, y, 'grass'))
+                elif char == 'S':  # Stone
+                    self.platforms.add(Platform(x, y, 'stone'))
+                elif char == '^':  # Danger/spikes
+                    self.platforms.add(Platform(x, y, 'danger'))
+                elif char == 'I':  # Ice
+                    self.platforms.add(Platform(x, y, 'ice'))
+                elif char == 'M':  # Moving platform
+                    self.platforms.add(Platform(x, y, 'moving'))
+                elif char == 'B':  # Breakable
+                    self.platforms.add(Platform(x, y, 'breakable'))
+                elif char == 'P':  # Player start
+                    self.player_start = (x, y)
+                elif char == 'E':  # Enemy spawn
+                    from src.enemies.enemy import create_enemy, ENEMY_PATROL
+                    self.enemies.add(create_enemy(ENEMY_PATROL, x, y))
+                elif char == 'T':  # Turret
+                    from src.enemies.enemy import create_enemy, ENEMY_TURRET
+                    self.enemies.add(create_enemy(ENEMY_TURRET, x, y))
+                elif char == 'F':  # Flying enemy
+                    from src.enemies.enemy import create_enemy, ENEMY_FLYING
+                    self.enemies.add(create_enemy(ENEMY_FLYING, x, y))
+                elif char == 'K':  # Key/collectible
+                    from src.levels.collectible import Key
+                    self.collectibles.add(Key(x, y))
+                elif char == 'C':  # Coin
+                    from src.levels.collectible import Coin
+                    self.collectibles.add(Coin(x, y))
+                elif char == 'X':  # Level exit
+                    self.platforms.add(Platform(x, y, 'finish'))
+                    self.exit_rect = pygame.Rect(x, y, TILE_SIZE, TILE_SIZE)
+                    
+    def update(self, current_time, player):
+        """Update level elements"""
+        # Update camera to follow player
+        target_camera = player.rect.centerx - SCREEN_WIDTH // 2
+        target_camera = max(0, min(target_camera, self.width - SCREEN_WIDTH))
+        self.camera_x += (target_camera - self.camera_x) * 0.1  # Smooth camera
+        
+        # Update enemies
+        for enemy in self.enemies:
+            enemy.update(self.platforms, player, current_time, self.camera_x)
+            
+        # Update moving platforms
+        for platform in self.platforms:
+            if platform.tile_type == 'moving':
+                if platform.vertical_move:
+                    platform.rect.y += platform.move_speed * platform.move_direction
+                    if abs(platform.rect.y - platform.start_y) > platform.move_range:
+                        platform.move_direction *= -1
+                else:
+                    platform.rect.x += platform.move_speed * platform.move_direction
+                    if abs(platform.rect.x - platform.start_x) > platform.move_range:
+                        platform.move_direction *= -1
+                        
+        # Check collectibles
+        collected = pygame.sprite.spritecollide(player, self.collectibles, True)
+        for item in collected:
+            if hasattr(item, 'value'):
+                return ('coin', item.value)
+            elif hasattr(item, 'key_id'):
+                return ('key', item.key_id)
+                
+        # Check if player reached exit
+        if self.exit_rect and player.rect.colliderect(self.exit_rect):
+            return ('exit', None)
+            
+        return None
+        
+    def draw(self, surface):
+        """Draw the level"""
+        # Draw platforms
+        for platform in self.platforms:
+            surface.blit(platform.image, (platform.rect.x - self.camera_x, platform.rect.y))
+            
+        # Draw collectibles
+        for item in self.collectibles:
+            item.draw(surface, self.camera_x)
+            
+        # Draw enemies
+        for enemy in self.enemies:
+            enemy.draw(surface, self.camera_x)
+
+
+# Level templates
+LEVEL_1_DATA = """
+....................................................................................................
+....................................................................................................
+....................................................................................................
+...............................K..................................................................
+..........................#####...#####.............................................................
+.........................#.............#............................................................
+........................#...............#...........................................................
+.......................#.................#..........................................................
+......P..............C....................C.......E.................................................
+#######################...#########...###########...#######...#######...##############...###########
+......................#...#.......#...#.........#...#.....#...#.....#...#............#...#..........
+......................#...#.......#...#.........#...#.....#...#.....#...#............#...#..........
+......................#...#.......#...#.........#...#.....#...#.....#...#............#...#..........
+#######################...#########...###########...#######...#######...##############...###########
+........................................................................X...........................
+"""
+
+LEVEL_2_DATA = """
+....................................................................................................
+....................................................................................................
+.F..................................................................................................
+....................................................................................................
+.........................T..........................................................................
+......P.................###..........................K..............................................
+......#................#...#..........................###...........................................
+......#...............#.....#........................#...#..........................................
+......#......E.......#.......#.......E..............#.....#.........................................
+#######...#############.......#########...#############.....#########...###############...############
+......#...#...........................#...#.....................#...#...............#...#..........
+......#...#...........................#...#.....................#...#...............#...#..........
+......#...#...........................#...#.....................#...#...............#...#..........
+#######...#...........................#...#.....................#...#...............#...#..........
+......#...#...........................#...#.....................#...#...............#...#..........
+#######...#############.......#########...#############.....#########...###############...#########
+......................#...#...#.......................#...#...#.......................................
+......................#...#...#.......................#...#...#.......................................
+......................#...#...#.......................#...#...#.......................................
+#######################...#...#######################...#...#########################################
+........................................................................X...........................
+"""
+
+LEVEL_3_DATA = """
+....................................................................................................
+....................................................................................................
+....................................................................................................
+..................................K.................................................................
+.................................###................................................................
+................................#...#...............................................................
+...............................#.....#..............................................................
+..............................#.......#.............................................................
+......P......................#.........#............................................................
+......#..........F..........#...........#..........F................................................
+#######.......#######......#.............#......#######.......#######.......#######.................
+......#.......#.....#.......#...............#.......#.....#.......#.....#.......#.....#.................
+......#.......#.....#.......#...............#.......#.....#.......#.....#.......#.....#.................
+......#.......#.....#.......#...............#.......#.....#.......#.....#.......#.....#.................
+......#.......#.....#.......#...............#.......#.....#.......#.....#.......#.....#.................
+#######...#######...#######...#######...#######...#######...#######...#######...#######...#########
+......#...#.....#...#.....#...#.....#...#.....#...#.....#...#.....#...#.....#...#.....#...#..........
+......#...#.....#...#.....#...#.....#...#.....#...#.....#...#.....#...#.....#...#.....#...#..........
+......#...#.....#...#.....#...#.....#...#.....#...#.....#...#.....#...#.....#...#.....#...#..........
+#######...#######...#######...#######...#######...#######...#######...#######...#######...#########
+........................................................................X...........................
+"""
