@@ -3,6 +3,7 @@ Platform and level tile classes
 """
 import pygame
 from src.constants import *
+from src.background import Background
 
 
 class Platform(pygame.sprite.Sprite):
@@ -46,6 +47,9 @@ class Level:
         self.level_number = level_number
         self.width = 0
         self.height = 0
+        
+        # Background
+        self.background = Background(level_number)
         
         # Sprite groups
         self.platforms = pygame.sprite.Group()
@@ -149,7 +153,10 @@ class Level:
         return None
         
     def draw(self, surface):
-        """Draw the level"""
+        """Draw the level with background"""
+        # Draw parallax background first
+        self.background.draw(surface, self.camera_x)
+        
         # Draw platforms
         for platform in self.platforms:
             surface.blit(platform.image, (platform.rect.x - self.camera_x, platform.rect.y))
