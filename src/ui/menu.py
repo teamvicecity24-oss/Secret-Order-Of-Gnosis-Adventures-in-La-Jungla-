@@ -39,6 +39,66 @@ class Button:
         return False
 
 
+class GlowingButton(Button):
+    """Button with yellow glow effect and black outline"""
+    
+    def __init__(self, x, y, width, height, text, action=None):
+        super().__init__(x, y, width, height, text, action=action)
+        self.glow_radius = 0
+        self.glow_direction = 1
+        self.glow_timer = 0
+        
+        # Yellow button colors
+        self.color = (255, 215, 0)  # Gold/Yellow
+        self.hover_color = (255, 255, 100)  # Bright yellow
+        self.text_color = BLACK
+        self.outline_color = BLACK
+        self.glow_color = (255, 200, 50)
+        
+    def update(self, mouse_pos):
+        """Update glow animation and hover state"""
+        super().update(mouse_pos)
+        
+        # Animate glow
+        self.glow_timer += 1
+        self.glow_radius = 8 + int(4 * pygame.math.Vector2(1, 0).rotate(self.glow_timer * 3).y)
+        
+    def draw(self, surface):
+        """Draw glowing yellow button with black outline"""
+        # Get current color
+        color = self.hover_color if self.hovered else self.color
+        
+        # Draw glow effect (multiple layers for intensity)
+        if self.hovered:
+            for i in range(3, 0, -1):
+                glow_surface = pygame.Surface((self.rect.width + self.glow_radius * 2, 
+                                              self.rect.height + self.glow_radius * 2), 
+                                             pygame.SRCALPHA)
+                pygame.draw.rect(glow_surface, (*self.glow_color, 60 - i * 15), 
+                                (self.glow_radius - i * 2, self.glow_radius - i * 2,
+                                 self.rect.width + i * 4, self.rect.height + i * 4),
+                                border_radius=8)
+                surface.blit(glow_surface, 
+                           (self.rect.x - self.glow_radius, self.rect.y - self.glow_radius))
+        
+        # Draw button background
+        pygame.draw.rect(surface, color, self.rect, border_radius=5)
+        
+        # Draw black outline
+        pygame.draw.rect(surface, self.outline_color, self.rect, 3, border_radius=5)
+        
+        # Inner highlight
+        pygame.draw.rect(surface, (255, 255, 200), 
+                        (self.rect.x + 2, self.rect.y + 2, 
+                         self.rect.width - 4, self.rect.height // 2 - 2), 
+                        border_radius=3)
+        
+        # Draw text
+        text_surf = self.font.render(self.text, True, self.text_color)
+        text_rect = text_surf.get_rect(center=self.rect.center)
+        surface.blit(text_surf, text_rect)
+
+
 class Menu:
     """Base menu class"""
     
@@ -84,49 +144,58 @@ class MainMenu(Menu):
         super().__init__("Secret Order of Gnosis")
         self.subtitle = "Adventures in La Jungla"
         
-        # Load logo image
+        # Load full-screen background image (the seal)
         try:
-            self.logo = pygame.image.load('assets/images/ui/logo.png').convert_alpha()
-            # Scale to appropriate size (200x200)
-            self.logo = pygame.transform.scale(self.logo, (200, 200))
+            self.bg_image = pygame.image.load('assets/images/ui/logo.png').convert()
+            # Scale to fill screen
+            self.bg_image = pygame.transform.scale(self.bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
         except:
-            # Create placeholder if logo not found
-            self.logo = pygame.Surface((200, 200), pygame.SRCALPHA)
-            # Draw a simple emblem
-            pygame.draw.circle(self.logo, (255, 215, 0), (100, 100), 90, 5)
-            pygame.draw.polygon(self.logo, (255, 215, 0), 
-                              [(100, 30), (160, 140), (40, 140)])
-            pygame.draw.ellipse(self.logo, (255, 255, 100), 
-                              (85, 100, 30, 40))
+            # Fallback to black
+            self.bg_image = None
         
-        # Create buttons
+        # Create glowing yellow buttons with black outline
         center_x = SCREEN_WIDTH // 2 - 100
-        self.add_button(center_x, 320, 200, 50, "Play", lambda: "play")
-        self.add_button(center_x, 390, 200, 50, "Character Select", lambda: "character_select")
-        self.add_button(center_x, 460, 200, 50, "High Scores", lambda: "high_scores")
-        self.add_button(center_x, 530, 200, 50, "Help", lambda: "help")
-        self.add_button(center_x, 600, 200, 50, "Quit", lambda: "quit")
+        button_y_start = 320
+        button_spacing = 70
+        
+        self.buttons = []  # Clear default buttons
+        self._create_glowing_button(center_x, button_y_start, 200, 50, "Play", lambda: "play")
+        self._create_glowing_button(center_x, button_y_start + button_spacing, 200, 50, "Character Select", lambda: "character_select")
+        self._create_glowing_button(center_x, button_y_start + button_spacing * 2, 200, 50, "High Scores", lambda: "high_scores")
+        self._create_glowing_button(center_x, button_y_start + button_spacing * 3, 200, 50, "Help", lambda: "help")
+        self._create_glowing_button(center_x, button_y_start + button_spacing * 4, 200, 50, "Quit", lambda: "quit")
+        
+    def _create_glowing_button(self, x, y, width, height, text, action):
+        """Create a glowing yellow button with black outline"""
+        # Custom button with glow effect
+        button = GlowingButton(x, y, width, height, text, action)
+        self.buttons.append(button)
+        return button
         
     def draw(self, surface):
-        """Draw main menu with logo and subtitle"""
-        # Background
-        surface.fill(BLACK)
+        """Draw main menu with seal background and glowing buttons"""
+        # Draw full-screen background (the seal)
+        if self.bg_image:
+            surface.blit(self.bg_image, (0, 0))
+        else:
+            surface.fill(BLACK)
         
-        # Draw logo at top
-        logo_rect = self.logo.get_rect(center=(SCREEN_WIDTH // 2, 120))
-        surface.blit(self.logo, logo_rect)
+        # Title at top with glow
+        title_surf = self.font_title.render(self.title, True, (255, 215, 0))  # Gold
+        title_rect = title_surf.get_rect(center=(SCREEN_WIDTH // 2, 60))
         
-        # Title below logo
-        title_surf = self.font_title.render(self.title, True, YELLOW)
-        title_rect = title_surf.get_rect(center=(SCREEN_WIDTH // 2, 260))
+        # Title glow effect
+        for offset in range(3, 0, -1):
+            glow_surf = self.font_title.render(self.title, True, (255, 180, 0))
+            surface.blit(glow_surf, (title_rect.x + offset, title_rect.y + offset))
         surface.blit(title_surf, title_rect)
         
         # Subtitle
-        sub_surf = self.font_text.render(self.subtitle, True, GREEN)
-        sub_rect = sub_surf.get_rect(center=(SCREEN_WIDTH // 2, 295))
+        sub_surf = self.font_text.render(self.subtitle, True, (255, 255, 150))
+        sub_rect = sub_surf.get_rect(center=(SCREEN_WIDTH // 2, 105))
         surface.blit(sub_surf, sub_rect)
         
-        # Buttons
+        # Glowing buttons
         for button in self.buttons:
             button.draw(surface)
 
