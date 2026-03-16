@@ -43,7 +43,8 @@ class GlowingButton(Button):
     """Button with yellow glow effect and black outline"""
     
     def __init__(self, x, y, width, height, text, action=None):
-        super().__init__(x, y, width, height, text, action=action)
+        super().__init__(x, y, width, height, text)
+        self.action = action
         self.glow_radius = 0
         self.glow_direction = 1
         self.glow_timer = 0
