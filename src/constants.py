@@ -5,8 +5,8 @@ Game Constants and Configuration
 import pygame
 
 # Screen Settings
-SCREEN_WIDTH = 1280
-SCREEN_HEIGHT = 720
+SCREEN_WIDTH = 1920
+SCREEN_HEIGHT = 1080
 FPS = 60
 TITLE = "Secret Order of Gnosis: Adventures in La Jungla"
 

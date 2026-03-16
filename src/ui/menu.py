@@ -145,26 +145,17 @@ class MainMenu(Menu):
         super().__init__("Secret Order of Gnosis")
         self.subtitle = "Adventures in La Jungla"
         
-        # Load full-screen background image (the seal)
-        try:
-            self.bg_image = pygame.image.load('assets/images/ui/logo.png').convert()
-            # Scale to fill screen
-            self.bg_image = pygame.transform.scale(self.bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
-        except:
-            # Fallback to black
-            self.bg_image = None
-        
         # Create glowing yellow buttons with black outline
         center_x = SCREEN_WIDTH // 2 - 100
-        button_y_start = 320
+        button_y_start = 570  # Adjusted for 1080p
         button_spacing = 70
         
         self.buttons = []  # Clear default buttons
-        self._create_glowing_button(center_x, button_y_start, 200, 50, "Play", lambda: "play")
-        self._create_glowing_button(center_x, button_y_start + button_spacing, 200, 50, "Character Select", lambda: "character_select")
-        self._create_glowing_button(center_x, button_y_start + button_spacing * 2, 200, 50, "High Scores", lambda: "high_scores")
-        self._create_glowing_button(center_x, button_y_start + button_spacing * 3, 200, 50, "Help", lambda: "help")
-        self._create_glowing_button(center_x, button_y_start + button_spacing * 4, 200, 50, "Quit", lambda: "quit")
+        self._create_glowing_button(center_x, button_y_start, 200, 45, "Play", lambda: "play")
+        self._create_glowing_button(center_x, button_y_start + button_spacing, 200, 45, "Character Select", lambda: "character_select")
+        self._create_glowing_button(center_x, button_y_start + button_spacing * 2, 200, 45, "High Scores", lambda: "high_scores")
+        self._create_glowing_button(center_x, button_y_start + button_spacing * 3, 200, 45, "Help", lambda: "help")
+        self._create_glowing_button(center_x, button_y_start + button_spacing * 4, 200, 45, "Quit", lambda: "quit")
         
     def _create_glowing_button(self, x, y, width, height, text, action):
         """Create a glowing yellow button with black outline"""
@@ -174,31 +165,136 @@ class MainMenu(Menu):
         return button
         
     def draw(self, surface):
-        """Draw main menu with seal background and glowing buttons"""
-        # Draw full-screen background (the seal)
-        if self.bg_image:
-            surface.blit(self.bg_image, (0, 0))
-        else:
-            surface.fill(BLACK)
+        """Draw main menu with 550-bit pixel art style (super chunky pixels)"""
+        # Create pixelated surface at low resolution then scale up
+        pixel_scale = 16  # 550-bit style - very chunky pixels for 1080p
+        low_w = SCREEN_WIDTH // pixel_scale
+        low_h = SCREEN_HEIGHT // pixel_scale
         
-        # Title at top with glow
-        title_surf = self.font_title.render(self.title, True, (255, 215, 0))  # Gold
-        title_rect = title_surf.get_rect(center=(SCREEN_WIDTH // 2, 60))
+        # Create low-res surface
+        pixel_surface = pygame.Surface((low_w, low_h))
         
-        # Title glow effect
-        for offset in range(3, 0, -1):
-            glow_surf = self.font_title.render(self.title, True, (255, 180, 0))
-            surface.blit(glow_surf, (title_rect.x + offset, title_rect.y + offset))
-        surface.blit(title_surf, title_rect)
+        # Draw pixelated jungle background
+        self._draw_pixel_jungle(pixel_surface, low_w, low_h)
         
-        # Subtitle
-        sub_surf = self.font_text.render(self.subtitle, True, (255, 255, 150))
-        sub_rect = sub_surf.get_rect(center=(SCREEN_WIDTH // 2, 105))
-        surface.blit(sub_surf, sub_rect)
+        # Draw pixelated seal
+        self._draw_pixel_seal(pixel_surface, low_w, low_h)
         
-        # Glowing buttons
+        # Draw pixelated text
+        self._draw_pixel_text(pixel_surface, low_w, low_h)
+        
+        # Scale up to full screen with nearest neighbor (keeps pixels chunky)
+        scaled = pygame.transform.scale(pixel_surface, (SCREEN_WIDTH, SCREEN_HEIGHT))
+        surface.blit(scaled, (0, 0))
+        
+        # Draw glowing buttons at full resolution (they look better smooth)
         for button in self.buttons:
             button.draw(surface)
+    
+    def _draw_pixel_jungle(self, surface, w, h):
+        """Draw chunky pixel jungle background"""
+        # Dark green base
+        surface.fill((20, 50, 30))
+        
+        # Big pixel blocks for trees (64-bit style)
+        tree_colors = [(34, 100, 60), (40, 120, 70), (25, 80, 45)]
+        
+        # Left trees - large blocky pixels
+        for i in range(3):
+            x = 10 + i * 25
+            tree_h = 80 + i * 20
+            # Trunk
+            pygame.draw.rect(surface, (60, 40, 20), (x, h - tree_h, 12, tree_h))
+            # Leaves (blocky)
+            pygame.draw.rect(surface, tree_colors[i], (x - 15, h - tree_h - 30, 42, 40))
+            pygame.draw.rect(surface, tree_colors[i], (x - 8, h - tree_h - 50, 28, 25))
+        
+        # Right trees
+        for i in range(3):
+            x = w - 35 - i * 25
+            tree_h = 80 + i * 15
+            pygame.draw.rect(surface, (60, 40, 20), (x, h - tree_h, 12, tree_h))
+            pygame.draw.rect(surface, tree_colors[i], (x - 15, h - tree_h - 30, 42, 40))
+            pygame.draw.rect(surface, tree_colors[i], (x - 8, h - tree_h - 50, 28, 25))
+        
+        # Blocky pixel bananas
+        banana_positions = [
+            (15, 20), (40, 35), (w-30, 25), (w-55, 40),
+            (25, h-60), (w-40, h-50), (50, h-40), (w-60, h-35)
+        ]
+        for bx, by in banana_positions:
+            # Chunky yellow blocks
+            pygame.draw.rect(surface, (255, 255, 80), (bx, by, 8, 5))
+            pygame.draw.rect(surface, (200, 200, 50), (bx+1, by+1, 6, 3))
+        
+        # Big blocky vines
+        for x in [20, w-25, 60, w-65]:
+            for y in range(0, 50, 6):
+                pygame.draw.rect(surface, (50, 130, 60), (x + y//15, y, 4, 5))
+    
+    def _draw_pixel_seal(self, surface, w, h):
+        """Draw a pixel art version of the seal"""
+        center_x = w // 2
+        seal_y = 35
+        
+        # Outer circle (gold pixels)
+        pygame.draw.circle(surface, (255, 200, 0), (center_x, seal_y), 28, 3)
+        
+        # Inner circle
+        pygame.draw.circle(surface, (255, 215, 0), (center_x, seal_y), 22, 2)
+        
+        # Pyramid (triangle with brick lines)
+        pyramid_points = [
+            (center_x, seal_y - 15),
+            (center_x - 18, seal_y + 15),
+            (center_x + 18, seal_y + 15)
+        ]
+        pygame.draw.polygon(surface, (200, 180, 100), pyramid_points)
+        # Brick lines
+        for y_off in [-5, 0, 5, 10]:
+            pygame.draw.line(surface, (150, 130, 80), 
+                           (center_x - 12 + y_off//2, seal_y + y_off),
+                           (center_x + 12 - y_off//2, seal_y + y_off), 1)
+        
+        # Banana in center
+        pygame.draw.ellipse(surface, (255, 255, 0), 
+                          (center_x - 6, seal_y + 2, 12, 6))
+        
+        # Top symbol
+        pygame.draw.circle(surface, (255, 50, 50), (center_x, seal_y - 22), 5, 2)
+        pygame.draw.circle(surface, (255, 255, 255), (center_x, seal_y - 22), 3)
+        
+        # Side arches
+        pygame.draw.arc(surface, (255, 200, 0), 
+                       (center_x - 26, seal_y - 12, 15, 24), 
+                       1.5, 4.7, 2)
+        pygame.draw.arc(surface, (255, 200, 0), 
+                       (center_x + 11, seal_y - 12, 15, 24), 
+                       1.8, 4.4, 2)
+    
+    def _draw_pixel_text(self, surface, w, h):
+        """Draw pixelated text using blocky font"""
+        # Title - rendered at full size then scaled down
+        title_text = "SECRET ORDER"
+        sub_text = "OF GNOSIS"
+        
+        # Use a smaller font for pixel look
+        pixel_font = pygame.font.Font(None, 28)
+        
+        # Draw title
+        title_surf = pixel_font.render(title_text, True, (255, 215, 0))
+        title_rect = title_surf.get_rect(center=(w // 2, 75))
+        surface.blit(title_surf, title_rect)
+        
+        # Draw subtitle
+        sub_surf = pixel_font.render(sub_text, True, (255, 200, 100))
+        sub_rect = sub_surf.get_rect(center=(w // 2, 88))
+        surface.blit(sub_surf, sub_rect)
+        
+        # Adventure subtitle
+        adv_surf = pixel_font.render("Adventures in La Jungla", True, (200, 255, 150))
+        adv_rect = adv_surf.get_rect(center=(w // 2, 102))
+        surface.blit(adv_surf, adv_rect)
 
 
 class CharacterSelectMenu(Menu):
