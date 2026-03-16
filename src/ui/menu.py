@@ -84,27 +84,46 @@ class MainMenu(Menu):
         super().__init__("Secret Order of Gnosis")
         self.subtitle = "Adventures in La Jungla"
         
+        # Load logo image
+        try:
+            self.logo = pygame.image.load('assets/images/ui/logo.png').convert_alpha()
+            # Scale to appropriate size (200x200)
+            self.logo = pygame.transform.scale(self.logo, (200, 200))
+        except:
+            # Create placeholder if logo not found
+            self.logo = pygame.Surface((200, 200), pygame.SRCALPHA)
+            # Draw a simple emblem
+            pygame.draw.circle(self.logo, (255, 215, 0), (100, 100), 90, 5)
+            pygame.draw.polygon(self.logo, (255, 215, 0), 
+                              [(100, 30), (160, 140), (40, 140)])
+            pygame.draw.ellipse(self.logo, (255, 255, 100), 
+                              (85, 100, 30, 40))
+        
         # Create buttons
         center_x = SCREEN_WIDTH // 2 - 100
-        self.add_button(center_x, 250, 200, 50, "Play", lambda: "play")
-        self.add_button(center_x, 320, 200, 50, "Character Select", lambda: "character_select")
-        self.add_button(center_x, 390, 200, 50, "High Scores", lambda: "high_scores")
-        self.add_button(center_x, 460, 200, 50, "Help", lambda: "help")
-        self.add_button(center_x, 530, 200, 50, "Quit", lambda: "quit")
+        self.add_button(center_x, 320, 200, 50, "Play", lambda: "play")
+        self.add_button(center_x, 390, 200, 50, "Character Select", lambda: "character_select")
+        self.add_button(center_x, 460, 200, 50, "High Scores", lambda: "high_scores")
+        self.add_button(center_x, 530, 200, 50, "Help", lambda: "help")
+        self.add_button(center_x, 600, 200, 50, "Quit", lambda: "quit")
         
     def draw(self, surface):
-        """Draw main menu with subtitle"""
+        """Draw main menu with logo and subtitle"""
         # Background
         surface.fill(BLACK)
         
-        # Title
+        # Draw logo at top
+        logo_rect = self.logo.get_rect(center=(SCREEN_WIDTH // 2, 120))
+        surface.blit(self.logo, logo_rect)
+        
+        # Title below logo
         title_surf = self.font_title.render(self.title, True, YELLOW)
-        title_rect = title_surf.get_rect(center=(SCREEN_WIDTH // 2, 150))
+        title_rect = title_surf.get_rect(center=(SCREEN_WIDTH // 2, 260))
         surface.blit(title_surf, title_rect)
         
         # Subtitle
         sub_surf = self.font_text.render(self.subtitle, True, GREEN)
-        sub_rect = sub_surf.get_rect(center=(SCREEN_WIDTH // 2, 200))
+        sub_rect = sub_surf.get_rect(center=(SCREEN_WIDTH // 2, 295))
         surface.blit(sub_surf, sub_rect)
         
         # Buttons
